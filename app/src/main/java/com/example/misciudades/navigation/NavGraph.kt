@@ -12,49 +12,64 @@ import com.example.misciudades.screens.*
 @Composable
 fun CapitalNavGraph(
     repository: CapitalRepository,
+    homeViewModel: HomeViewModel,
     startDestination: String = "home"
 ) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = startDestination) {
+        // 1) Home
         composable("home") {
             HomeScreen(
-                repository = repository,
-                onAdd = { navController.navigate("edit?mode=add&id=-1") },
-                onEdit = { id -> navController.navigate("edit?mode=edit&id=$id") },
-                onSearch = { navController.navigate("search") },
+                viewModel       = homeViewModel,
+                onAdd           = { navController.navigate("edit?mode=add&id=-1") },
+                onEdit          = { id -> navController.navigate("edit?mode=edit&id=$id") },
+                onSearch        = { navController.navigate("search") },
                 onManageCountry = { navController.navigate("country") }
             )
         }
 
+        // 2) Edit/Add screen
         composable(
             route = "edit?mode={mode}&id={id}",
             arguments = listOf(
                 navArgument("mode") { type = NavType.StringType },
-                navArgument("id") { type = NavType.IntType }
+                navArgument("id")   { type = NavType.IntType }
             )
-        ) { backStackEntry ->
-            val mode = backStackEntry.arguments?.getString("mode") ?: "add"
-            val id = backStackEntry.arguments?.getInt("id") ?: -1
+        ) { backStack ->
+            val mode = backStack.arguments?.getString("mode") ?: "add"
+            val id   = backStack.arguments?.getInt("id") ?: -1
+
             EditCapitalScreen(
                 repository = repository,
-                mode = mode,
-                capitalId = id,
-                onSaved = { navController.popBackStack() }
+                mode       = mode,
+                capitalId  = id,
+                onSaved    = {
+                    homeViewModel.loadAll()
+                    navController.popBackStack()
+                }
             )
         }
 
+        // 3) Search screen
         composable("search") {
             SearchCapitalScreen(
                 repository = repository,
-                onBack = { navController.popBackStack() }
+                onBack     = {
+                    homeViewModel.loadAll()
+                    navController.popBackStack()
+                }
             )
         }
 
+        // 4) Manage country screen
         composable("country") {
             ManageCountryScreen(
                 repository = repository,
-                onBack = { navController.popBackStack() }
+                onBack     = {
+                    homeViewModel.loadAll()
+                    navController.popBackStack()
+                }
             )
         }
     }
