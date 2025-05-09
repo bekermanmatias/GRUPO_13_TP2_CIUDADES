@@ -2,9 +2,7 @@ package com.example.misciudades.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.misciudades.data.CapitalRepository
 import com.example.misciudades.screens.*
@@ -17,8 +15,7 @@ fun CapitalNavGraph(
 ) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = startDestination) {
-        // 1) Home
+    NavHost(navController, startDestination) {
         composable("home") {
             HomeScreen(
                 viewModel       = homeViewModel,
@@ -28,17 +25,15 @@ fun CapitalNavGraph(
                 onManageCountry = { navController.navigate("country") }
             )
         }
-
-        // 2) Edit/Add screen
         composable(
-            route = "edit?mode={mode}&id={id}",
+            "edit?mode={mode}&id={id}",
             arguments = listOf(
                 navArgument("mode") { type = NavType.StringType },
                 navArgument("id")   { type = NavType.IntType }
             )
-        ) { backStack ->
-            val mode = backStack.arguments?.getString("mode") ?: "add"
-            val id   = backStack.arguments?.getInt("id") ?: -1
+        ) { back ->
+            val mode = back.arguments?.getString("mode") ?: "add"
+            val id   = back.arguments?.getInt("id") ?: -1
 
             EditCapitalScreen(
                 repository = repository,
@@ -50,8 +45,6 @@ fun CapitalNavGraph(
                 }
             )
         }
-
-        // 3) Search screen
         composable("search") {
             SearchCapitalScreen(
                 repository = repository,
@@ -61,8 +54,6 @@ fun CapitalNavGraph(
                 }
             )
         }
-
-        // 4) Manage country screen
         composable("country") {
             ManageCountryScreen(
                 repository = repository,

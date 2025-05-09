@@ -19,16 +19,17 @@ fun SearchCapitalScreen(
     repository: CapitalRepository,
     onBack: () -> Unit
 ) {
-    // Obtengo el ViewModel con el repo
+    // Creamos el VM que usa el repo
     val factory = SearchCapitalViewModel.provideFactory(repository)
     val viewModel: SearchCapitalViewModel = composeViewModel(factory = factory)
 
     var query by rememberSaveable { mutableStateOf("") }
     var resultado by remember { mutableStateOf<Capital?>(null) }
 
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
     ) {
         OutlinedTextField(
             value = query,
@@ -38,9 +39,7 @@ fun SearchCapitalScreen(
         )
 
         Button(
-            onClick = {
-                viewModel.buscarPorCiudad(query) { resultado = it }
-            },
+            onClick = { viewModel.buscarPorCiudad(query) { resultado = it } },
             modifier = Modifier
                 .padding(top = 8.dp)
                 .fillMaxWidth()
@@ -50,28 +49,33 @@ fun SearchCapitalScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Dos casos: encontrada o no encontrada
         if (resultado != null) {
-            // Capital encontrada
+            // Mostramos datos y acciones
             val cap = resultado!!
             Text("Encontrada: ${cap.ciudad}, ${cap.pais} (${cap.poblacion})")
+
             Row(modifier = Modifier.padding(top = 8.dp)) {
                 Button(onClick = {
                     viewModel.borrarCiudad(cap.ciudad)
-                    onBack()
+                    onBack()  // volvemos al home, NavGraph recargará la lista
                 }) {
                     Text("Borrar")
                 }
                 Spacer(Modifier.width(8.dp))
                 Button(onClick = {
-                    viewModel.actualizarPoblacion(cap.ciudad, cap.poblacion + 1)
+                    // Aquí usando el ID para actualizar
+                    viewModel.actualizarCapital(
+                        id = cap.id,
+                        nuevoPais = cap.pais,
+                        nuevaCiudad = cap.ciudad,
+                        nuevaPoblacion = cap.poblacion + 1
+                    )
                     onBack()
                 }) {
                     Text("+1 Pobla")
                 }
             }
         } else if (query.isNotBlank()) {
-            // Búsqueda sin resultados
             Text("No encontrada", modifier = Modifier.padding(top = 8.dp))
         }
 
@@ -99,16 +103,19 @@ class SearchCapitalViewModel(private val repo: CapitalRepository) : ViewModel() 
         }
     }
 
-    fun actualizarPoblacion(ciudad: String, poblacion: Int) {
+    fun actualizarCapital(
+        id: Int,
+        nuevoPais: String,
+        nuevaCiudad: String,
+        nuevaPoblacion: Int
+    ) {
         viewModelScope.launch {
-            repo.actualizarPoblacion(ciudad, poblacion)
+            repo.actualizarCapital(id, nuevoPais, nuevaCiudad, nuevaPoblacion)
         }
     }
 
     companion object {
-        fun provideFactory(
-            repo: CapitalRepository
-        ): ViewModelProvider.Factory =
+        fun provideFactory(repo: CapitalRepository): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
