@@ -16,6 +16,8 @@ import com.example.misciudades.ui.theme.Purple40
 import com.example.misciudades.ui.theme.PurpleGrey40
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +38,7 @@ fun EditCapitalScreen(
     var paisError by remember { mutableStateOf(false) }
     var ciudadError by remember { mutableStateOf(false) }
     var poblacionError by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(mode, capitalId) {
         if (mode == "edit" && capitalId != -1) {
@@ -71,8 +74,7 @@ fun EditCapitalScreen(
                 .padding(16.dp)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 OutlinedTextField(
@@ -92,9 +94,7 @@ fun EditCapitalScreen(
                         unfocusedContainerColor = PurpleGrey40.copy(alpha = 0.1f)
                     ),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp)
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                 )
 
                 OutlinedTextField(
@@ -114,9 +114,7 @@ fun EditCapitalScreen(
                         unfocusedContainerColor = PurpleGrey40.copy(alpha = 0.1f)
                     ),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp)
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                 )
 
                 OutlinedTextField(
@@ -136,8 +134,7 @@ fun EditCapitalScreen(
                         unfocusedContainerColor = PurpleGrey40.copy(alpha = 0.1f)
                     ),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 if (showError) {
@@ -145,9 +142,7 @@ fun EditCapitalScreen(
                         text = errorMessage,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .padding(top = 8.dp, bottom = 4.dp)
-                            .fillMaxWidth()
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp).fillMaxWidth()
                     )
                 }
 
@@ -155,27 +150,48 @@ fun EditCapitalScreen(
 
                 Button(
                     onClick = {
-                        val paisValido = pais.trim().length >= 3
-                        val ciudadValida = ciudad.trim().length >= 3
-                        val poblacion = poblacionStr.toIntOrNull()
+                        scope.launch {
+                            val paisValido = pais.trim().length >= 3
+                            val ciudadValida = ciudad.trim().length >= 3
+                            val poblacion = poblacionStr.toIntOrNull()
 
-                        paisError = !paisValido
-                        ciudadError = !ciudadValida
-                        poblacionError = poblacion == null
+                            paisError = !paisValido
+                            ciudadError = !ciudadValida
+                            poblacionError = poblacion == null
 
-                        if (!paisValido) {
-                            errorMessage = "El país debe tener al menos 3 caracteres"
-                            showError = true
-                        } else if (!ciudadValida) {
-                            errorMessage = "La ciudad debe tener al menos 3 caracteres"
-                            showError = true
-                        } else if (poblacion == null) {
-                            errorMessage = "La población debe ser un número válido"
-                            showError = true
-                        } else {
+                            if (!paisValido) {
+                                errorMessage = "El país debe tener al menos 3 caracteres"
+                                showError = true
+                                return@launch
+                            }
+                            if (!ciudadValida) {
+                                errorMessage = "La ciudad debe tener al menos 3 caracteres"
+                                showError = true
+                                return@launch
+                            }
+                            if (poblacion == null) {
+                                errorMessage = "La población debe ser un número válido"
+                                showError = true
+                                return@launch
+                            }
+
+                            val ciudadExistente = withContext(Dispatchers.IO) {
+                                repository.consultarPorNombre(ciudad.trim())
+                            }
+                            if (ciudadExistente != null && (mode == "add" || ciudadExistente.id != capitalId)) {
+                                errorMessage = "Ya existe una capital con ese nombre"
+                                showError = true
+                                return@launch
+                            }
+
                             showError = false
-                            if (mode == "add") repository.insertar(pais.trim(), ciudad.trim(), poblacion)
-                            else repository.actualizarCapital(capitalId, pais.trim(), ciudad.trim(), poblacion)
+                            withContext(Dispatchers.IO) {
+                                if (mode == "add") {
+                                    repository.insertar(pais.trim(), ciudad.trim(), poblacion)
+                                } else {
+                                    repository.actualizarCapital(capitalId, pais.trim(), ciudad.trim(), poblacion)
+                                }
+                            }
                             onSaved()
                         }
                     },
@@ -194,3 +210,4 @@ fun EditCapitalScreen(
         }
     }
 }
+

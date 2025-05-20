@@ -84,6 +84,31 @@ class CapitalRepository(context: Context) {
         return lista
     }
 
+    /** Consultar capital por ciudad exacta para validar existencia */
+    fun consultarPorNombre(ciudad: String): Capital? {
+        val db = dbHelper.readableDatabase
+        val cursor = db.query(
+            TABLE_CAPITALES,
+            null,
+            "$COL_CIUDAD = ? COLLATE NOCASE",
+            arrayOf(ciudad),
+            null, null, null
+        )
+        val cap = if (cursor.moveToFirst()) {
+            Capital(
+                id        = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID)),
+                pais      = cursor.getString(cursor.getColumnIndexOrThrow(COL_PAIS)),
+                ciudad    = cursor.getString(cursor.getColumnIndexOrThrow(COL_CIUDAD)),
+                poblacion = cursor.getInt(cursor.getColumnIndexOrThrow(COL_POBLACION))
+            )
+        } else null
+        cursor.close()
+        db.close()
+        return cap
+    }
+
+
+
 
     /** 3. Listar todas */
     fun listarTodas(): List<Capital> {
