@@ -2,6 +2,11 @@ package com.example.misciudades.data
 
 import android.content.ContentValues
 import android.content.Context
+import com.example.misciudades.data.DBHelper.Companion.COL_CIUDAD
+import com.example.misciudades.data.DBHelper.Companion.COL_ID
+import com.example.misciudades.data.DBHelper.Companion.COL_PAIS
+import com.example.misciudades.data.DBHelper.Companion.COL_POBLACION
+import com.example.misciudades.data.DBHelper.Companion.TABLE_CAPITALES
 
 data class Capital(
     val id: Int,
@@ -52,27 +57,33 @@ class CapitalRepository(context: Context) {
     }
 
     /** 2b. Consultar capital por ciudad (nombre) */
-    fun consultarPorCiudad(nombre: String): Capital? {
+    /** Busca todas las capitales cuyo nombre comience por el prefijo dado (case‑insensitive) */
+    fun buscarPorPrefijo(prefijo: String): List<Capital> {
         val db = dbHelper.readableDatabase
+        // El signo '?' es sustituido por 'prefijo%'
         val cursor = db.query(
-            DBHelper.TABLE_CAPITALES,
+            TABLE_CAPITALES,
             null,
-            "${DBHelper.COL_CIUDAD} = ?",
-            arrayOf(nombre),
+            "$COL_CIUDAD LIKE ?",
+            arrayOf("$prefijo%"),
             null, null, null
         )
-        val cap = if (cursor.moveToFirst()) {
-            Capital(
-                id        = cursor.getInt(cursor.getColumnIndexOrThrow(DBHelper.COL_ID)),
-                pais      = cursor.getString(cursor.getColumnIndexOrThrow(DBHelper.COL_PAIS)),
-                ciudad    = cursor.getString(cursor.getColumnIndexOrThrow(DBHelper.COL_CIUDAD)),
-                poblacion = cursor.getInt(cursor.getColumnIndexOrThrow(DBHelper.COL_POBLACION))
-            )
-        } else null
+        val lista = mutableListOf<Capital>()
+        if (cursor.moveToFirst()) {
+            do {
+                lista += Capital(
+                    id        = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID)),
+                    pais      = cursor.getString(cursor.getColumnIndexOrThrow(COL_PAIS)),
+                    ciudad    = cursor.getString(cursor.getColumnIndexOrThrow(COL_CIUDAD)),
+                    poblacion = cursor.getInt(cursor.getColumnIndexOrThrow(COL_POBLACION))
+                )
+            } while (cursor.moveToNext())
+        }
         cursor.close()
         db.close()
-        return cap
+        return lista
     }
+
 
     /** 3. Listar todas */
     fun listarTodas(): List<Capital> {

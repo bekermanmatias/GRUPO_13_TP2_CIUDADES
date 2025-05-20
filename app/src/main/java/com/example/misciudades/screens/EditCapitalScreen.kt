@@ -1,30 +1,43 @@
 package com.example.misciudades.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.misciudades.data.CapitalRepository
+import com.example.misciudades.ui.theme.Purple40
+import com.example.misciudades.ui.theme.PurpleGrey40
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditCapitalScreen(
     repository: CapitalRepository,
     mode: String,
     capitalId: Int,
-    onSaved: () -> Unit
+    onSaved: () -> Unit,
+    onBack: () -> Unit
 ) {
     var pais by rememberSaveable { mutableStateOf("") }
     var ciudad by rememberSaveable { mutableStateOf("") }
     var poblacionStr by rememberSaveable { mutableStateOf("") }
 
-    // Cargar solo en modo "edit"
-    LaunchedEffect(capitalId, mode) {
+    var errorMessage by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    var paisError by remember { mutableStateOf(false) }
+    var ciudadError by remember { mutableStateOf(false) }
+    var poblacionError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(mode, capitalId) {
         if (mode == "edit" && capitalId != -1) {
             val cap = withContext(Dispatchers.IO) { repository.consultarPorId(capitalId) }
             cap?.let {
@@ -35,43 +48,149 @@ fun EditCapitalScreen(
         }
     }
 
-    Column(Modifier.padding(16.dp)) {
-        OutlinedTextField(
-            value = pais,
-            onValueChange = { pais = it },
-            label = { Text("País") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = ciudad,
-            onValueChange = { ciudad = it },
-            label = { Text("Ciudad") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = poblacionStr,
-            onValueChange = { poblacionStr = it },
-            label = { Text("Población") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
-
-        Button(
-            onClick = {
-                poblacionStr.toIntOrNull()?.let { p ->
-                    if (mode == "add") {
-                        repository.insertar(pais, ciudad, p)
-                    } else {
-                        repository.actualizarCapital(capitalId, pais, ciudad, p)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(if (mode == "add") "Agregar Capital" else "Editar Capital") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
                     }
-                    onSaved()
-                }
-            },
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Purple40,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    ) { innerPadding ->
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            Text(if (mode == "add") "Guardar" else "Actualizar")
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OutlinedTextField(
+                    value = pais,
+                    onValueChange = {
+                        pais = it
+                        paisError = false
+                        showError = false
+                    },
+                    placeholder = { Text("País") },
+                    isError = paisError,
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (paisError) Color.Red else Purple40,
+                        unfocusedBorderColor = if (paisError) Color.Red else PurpleGrey40,
+                        focusedContainerColor = PurpleGrey40.copy(alpha = 0.1f),
+                        unfocusedContainerColor = PurpleGrey40.copy(alpha = 0.1f)
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                )
+
+                OutlinedTextField(
+                    value = ciudad,
+                    onValueChange = {
+                        ciudad = it
+                        ciudadError = false
+                        showError = false
+                    },
+                    placeholder = { Text("Ciudad") },
+                    isError = ciudadError,
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (ciudadError) Color.Red else Purple40,
+                        unfocusedBorderColor = if (ciudadError) Color.Red else PurpleGrey40,
+                        focusedContainerColor = PurpleGrey40.copy(alpha = 0.1f),
+                        unfocusedContainerColor = PurpleGrey40.copy(alpha = 0.1f)
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                )
+
+                OutlinedTextField(
+                    value = poblacionStr,
+                    onValueChange = {
+                        poblacionStr = it
+                        poblacionError = false
+                        showError = false
+                    },
+                    placeholder = { Text("Población") },
+                    isError = poblacionError,
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (poblacionError) Color.Red else Purple40,
+                        unfocusedBorderColor = if (poblacionError) Color.Red else PurpleGrey40,
+                        focusedContainerColor = PurpleGrey40.copy(alpha = 0.1f),
+                        unfocusedContainerColor = PurpleGrey40.copy(alpha = 0.1f)
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                )
+
+                if (showError) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .padding(top = 8.dp, bottom = 4.dp)
+                            .fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Button(
+                    onClick = {
+                        val paisValido = pais.trim().length >= 3
+                        val ciudadValida = ciudad.trim().length >= 3
+                        val poblacion = poblacionStr.toIntOrNull()
+
+                        paisError = !paisValido
+                        ciudadError = !ciudadValida
+                        poblacionError = poblacion == null
+
+                        if (!paisValido) {
+                            errorMessage = "El país debe tener al menos 3 caracteres"
+                            showError = true
+                        } else if (!ciudadValida) {
+                            errorMessage = "La ciudad debe tener al menos 3 caracteres"
+                            showError = true
+                        } else if (poblacion == null) {
+                            errorMessage = "La población debe ser un número válido"
+                            showError = true
+                        } else {
+                            showError = false
+                            if (mode == "add") repository.insertar(pais.trim(), ciudad.trim(), poblacion)
+                            else repository.actualizarCapital(capitalId, pais.trim(), ciudad.trim(), poblacion)
+                            onSaved()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Purple40,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                ) {
+                    Text(if (mode == "add") "Guardar" else "Actualizar")
+                }
+            }
         }
     }
 }

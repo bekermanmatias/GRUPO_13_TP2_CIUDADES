@@ -21,7 +21,9 @@ class MainActivity : ComponentActivity() {
         homeViewModel = HomeViewModel(repository)
 
         setContent {
-            MisCiudadesTheme {
+            MisCiudadesTheme(
+                darkTheme = false
+            ) {
                 CapitalNavGraph(
                     repository    = repository,
                     homeViewModel = homeViewModel

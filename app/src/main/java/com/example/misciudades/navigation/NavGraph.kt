@@ -16,15 +16,17 @@ fun CapitalNavGraph(
     val navController = rememberNavController()
 
     NavHost(navController, startDestination) {
+        // 1) Home
         composable("home") {
             HomeScreen(
                 viewModel       = homeViewModel,
                 onAdd           = { navController.navigate("edit?mode=add&id=-1") },
                 onEdit          = { id -> navController.navigate("edit?mode=edit&id=$id") },
-                onSearch        = { navController.navigate("search") },
                 onManageCountry = { navController.navigate("country") }
             )
         }
+
+        // 2) Edit/Add
         composable(
             "edit?mode={mode}&id={id}",
             arguments = listOf(
@@ -42,18 +44,15 @@ fun CapitalNavGraph(
                 onSaved    = {
                     homeViewModel.loadAll()
                     navController.popBackStack()
-                }
-            )
-        }
-        composable("search") {
-            SearchCapitalScreen(
-                repository = repository,
+                },
                 onBack     = {
-                    homeViewModel.loadAll()
+                    // si presiona volver, simplemente retrocede
                     navController.popBackStack()
                 }
             )
         }
+
+        // 3) Manage Country
         composable("country") {
             ManageCountryScreen(
                 repository = repository,
